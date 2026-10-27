@@ -1,0 +1,7 @@
+.env
+credenciales-sheet.json
+__pycache__/
+*.png
+*.pdf
+venv/
+.venv/

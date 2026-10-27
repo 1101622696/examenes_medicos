@@ -1,0 +1,9 @@
+playwright==1.55.0
+gspread==6.2.1
+google-auth>=2.30
+google-api-python-client==2.177.0
+fastapi>=0.110
+uvicorn>=0.29
+python-dotenv==1.0.1
+requests>=2.32
+tzdata
