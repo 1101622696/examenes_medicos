@@ -67,10 +67,11 @@ def _trabajo():
 
 
 def _notificar_apps_script(payload):
-    body = {'token': config.TOKEN_PROCESO_PYTHON, 'accion': 'resultado_cargue_examenes', **payload}
+    body = {'token': config.TOKEN_PROCESO_PYTHON, 'accion': 'resultado_cargue_examenes',
+            'usuario': config.USUARIO_CARGA, **payload}
     for intento in range(3):
         try:
-            r = requests.post(config.URL_WEBAPP, json=body, timeout=90)
+            r = requests.post(config.URL_WEBAPP, json=body, timeout=330)
             if r.ok:
                 print(f"📨 Resultado enviado a Apps Script ({len(payload.get('cargados', []))} cargados)")
                 return

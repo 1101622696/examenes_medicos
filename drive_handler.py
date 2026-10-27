@@ -15,21 +15,15 @@ class DriveHandler:
         print("✅ Conectado a Google Drive")
 
     def subir_archivo(self, ruta_local, nombre_archivo):
-        """
-        Sube un archivo local a la carpeta configurada en Drive.
-        Devuelve el webViewLink del archivo subido.
-        """
-        metadata = {
-            'name': nombre_archivo,
-            'parents': [config.DRIVE_FOLDER_ID]
-        }
+        metadata = {'name': nombre_archivo, 'parents': [config.DRIVE_FOLDER_ID]}
         media = MediaFileUpload(ruta_local, mimetype='application/pdf', resumable=True)
-
         archivo = self.service.files().create(
-            body=metadata,
-            media_body=media,
-            fields='id, webViewLink',
-            supportsAllDrives=True,
-        ).execute(num_retries=3)
+            body=metadata, media_body=media, fields='id, webViewLink',
+            supportsAllDrives=True).execute(num_retries=3)
+
+        # Igual que el cargue manual: cualquiera con el enlace puede ver
+        self.service.permissions().create(
+            fileId=archivo['id'], body={'type': 'anyone', 'role': 'reader'},
+            supportsAllDrives=True).execute(num_retries=3)
 
         return archivo.get('webViewLink')

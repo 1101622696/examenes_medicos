@@ -133,7 +133,19 @@ def ejecutar(resumen=None):
     inicio = config.ahora()
     sheets, drive = SheetsHandler(), DriveHandler()
     pendientes = sheets.obtener_pendientes()
-
+    # Misma regla que validarCargue_: un Solicitado sin fecha o fuera de ventana no se puede cargar
+    hoy = config.ahora().date()
+    validos = []
+    for p in pendientes:
+        if normalizar(p['estado']) == 'SOLICITADO' and (
+                p['fecha_examen'] is None
+                or abs((hoy - p['fecha_examen']).days) > config.DIAS_VENTANA_CARGUE):
+            sheets.registrar_log(p, f"Fuera de ventana de cargue (±{config.DIAS_VENTANA_CARGUE} días, "
+                                    f"sin confirmar): debe reprogramarse")
+            continue
+        validos.append(p)
+    pendientes = validos
+    sheets.flush()
     por_ips = defaultdict(list)
     for p in pendientes:
         por_ips[p['ips']].append(p)

@@ -159,46 +159,21 @@ class SheetsHandler:
 
     # ── ESCRITURA en lote ───────────────────────────────────────────
     def flush(self):
-        """Escribe cargados + Bitácora + Logs. Devuelve los cargados efectivamente escritos."""
-        escritos = []
-        if self._cargados:
-            vigentes = self._filas_vigentes([c['item'] for c in self._cargados])
-            ahora = config.ahora().strftime('%Y-%m-%d %H:%M:%S')
-            updates, bitacora = [], []
-
-            for c in self._cargados:
-                it, f = c['item'], c['item']['fila']
-                if f not in vigentes:
-                    self._logs.append(self._fila_log(
-                        it, f"NO escrito: la fila cambió durante la revisión. PDF en Drive: {c['link']}"))
-                    continue
-                updates += [
-                    {'range': f'{_letra(config.COL_LINK_CERTIFICADO)}{f}', 'values': [[c['link']]]},
-                    {'range': f'{_letra(config.COL_ESTADO)}{f}', 'values': [[config.ESTADO_DESTINO]]},
-                    {'range': f'{_letra(config.COL_FECHA_CARGUE)}{f}', 'values': [[ahora]]},
-                ]
-                bitacora.append([ahora, config.USUARIO_CARGA, config.BITACORA_ORIGEN,
-                                 it['id_examen'], it['cedula'], config.BITACORA_ACCION,
-                                 it['estado'], config.ESTADO_DESTINO, c['nombre_archivo']])
-                self._logs.append(self._fila_log(it, f"Cargado: {c['detalle']}"))
-                escritos.append({
-                    'fila': f, 'cedula': it['cedula'], 'id_examen': it['id_examen'],
-                    'ips': it['ips'], 'plataforma': c['plataforma'], 'link': c['link'],
-                    'nombre_archivo': c['nombre_archivo'],
-                    'fecha_examen': it['texto_fecha_examen'], 'fecha_certificado': c['fecha_cert'],
-                    'estado_anterior': it['estado'],
-                })
-
-            if updates:
-                _reintentar(self.sheet.batch_update, updates, value_input_option='USER_ENTERED')
-                print(f"   💾 {len(escritos)} filas marcadas como Cargado")
-            if bitacora and self.bitacora_sheet:
-                _reintentar(self.bitacora_sheet.append_rows, bitacora,
-                            value_input_option='USER_ENTERED', table_range='A1')
-
+        """Escribe Logs y devuelve los PDF encontrados para que Apps Script los registre."""
+        enviados = []
+        for c in self._cargados:
+            it = c['item']
+            self._logs.append(self._fila_log(it, f"PDF encontrado, enviado a la app: {c['detalle']}"))
+            enviados.append({
+                'fila': it['fila'], 'cedula': it['cedula'], 'id_examen': it['id_examen'],
+                'ips': it['ips'], 'plataforma': c['plataforma'], 'link': c['link'],
+                'nombre_archivo': c['nombre_archivo'], 'fecha_examen': it['texto_fecha_examen'],
+                'fecha_certificado': c['fecha_cert'],
+            })
+        if enviados:
+            print(f"   📤 {len(enviados)} PDF listos para registrar en la app")
         if self._logs and self.logs_sheet:
             _reintentar(self.logs_sheet.append_rows, self._logs,
                         value_input_option='USER_ENTERED', table_range='A1')
-
         self._cargados, self._logs = [], []
-        return escritos
+        return enviados
