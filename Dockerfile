@@ -8,4 +8,4 @@ COPY . .
 
 ENV PYTHONUNBUFFERED=1
 # Un solo worker: la cola vive en memoria
-CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port ${PORT:-10000} --workers 1"]
+CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-10000} --workers 1"]
