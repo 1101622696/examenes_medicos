@@ -4,7 +4,7 @@ import base64
 import datetime
 from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 import config
-
+from urllib.parse import urljoin
 
 def _parsear_fecha_sheet(texto):
     """
@@ -143,21 +143,23 @@ class AtisScraper:
         return mejor, diferencia
 
     def descargar_certificado(self, sufijo, cedula):
-        icono = self.page.locator(f'#vIMPRESION_{sufijo}')
-        icono.click()
+        iframe = self.page.locator('#gxp0_ifrm')
+        src_anterior = iframe.get_attribute('src') if iframe.count() else None
 
-        # Esperamos a que aparezca el iframe con el visor y capturamos su URL real
-        self.page.wait_for_selector("#gxp0_ifrm")
-        frame = None
-        for _ in range(40):
-            frame = next((f for f in self.page.frames
-                          if "aprintcertificado" in f.url.lower()), None)
-            if frame:
-                break
+        self.page.locator(f'#vIMPRESION_{sufijo}').click()
+
+        src = None
+        for _ in range(60):                      
+            if iframe.count():
+                s = iframe.get_attribute('src')
+                if s and 'aprintcertificado' in s.lower() and s != src_anterior:
+                    src = s
+                    break
             self.page.wait_for_timeout(250)
-        if not frame:
+        if not src:
             raise RuntimeError("No apareció el visor del certificado en ATIS")
-        pdf_url = frame.url
+
+        pdf_url = urljoin(self.page.url, src)
 
         # Pedimos esa URL directo con el mismo contexto (mismas cookies/sesión)
         response = self.context.request.get(pdf_url)
