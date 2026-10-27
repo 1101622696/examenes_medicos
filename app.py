@@ -53,11 +53,13 @@ def _keepalive(stop):
 def _trabajo():
     stop = threading.Event()
     threading.Thread(target=_keepalive, args=(stop,), daemon=True).start()
+    resumen = {'cargados': []}
     try:
-        payload = {'ok': True, **ejecutar()}
+        ejecutar(resumen)
+        payload = {'ok': True, **resumen}
     except Exception as e:
         traceback.print_exc()
-        payload = {'ok': False, 'error': str(e)}
+        payload = {'ok': False, 'error': str(e), **resumen}
     finally:
         stop.set()
         _lock.release()

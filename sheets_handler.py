@@ -4,7 +4,9 @@ import unicodedata
 import gspread
 from gspread.utils import rowcol_to_a1
 import config
-
+import time
+from requests.exceptions import ConnectionError as ReqConnectionError
+from gspread.exceptions import APIError
 
 # ── Funciones auxiliares (FUERA de la clase) ────────────────────────
 def normalizar(texto):
@@ -15,6 +17,21 @@ def normalizar(texto):
 def limpiar_cedula(texto):
     return re.sub(r'[.,\s]', '', str(texto or ''))
 
+
+def _reintentar(fn, *args, **kwargs):
+    """Reintenta llamadas a Sheets ante cortes de red o errores temporales de Google."""
+    for intento in range(4):
+        try:
+            return fn(*args, **kwargs)
+        except (ReqConnectionError, APIError) as e:
+            codigo = getattr(getattr(e, 'response', None), 'status_code', None)
+            if isinstance(e, APIError) and codigo not in (429, 500, 502, 503, 504):
+                raise
+            if intento == 3:
+                raise
+            espera = 5 * (intento + 1)
+            print(f"   ⚠️ Error temporal con Google Sheets, reintento en {espera}s")
+            time.sleep(espera)
 
 def parsear_fecha_sheet(texto):
     texto = (texto or '').strip()
@@ -67,7 +84,8 @@ class SheetsHandler:
             campos['id'] = config.COL_ID_EXAMEN
 
         rangos = [f'{_letra(c)}{ini}:{_letra(c)}' for c in campos.values()]
-        bloques = self.sheet.batch_get(rangos)   # ← 1 llamada a la API
+        # bloques = self.sheet.batch_get(rangos)   # ← 1 llamada a la API
+        bloques = _reintentar(self.sheet.batch_get, rangos)
 
         cols = {k: [r[0] if r else '' for r in b] for k, b in zip(campos, bloques)}
         n = max((len(v) for v in cols.values()), default=0)
@@ -127,7 +145,7 @@ class SheetsHandler:
         for it in items:
             rangos += [f"{_letra(config.COL_ESTADO)}{it['fila']}",
                        f"{_letra(config.COL_CEDULA)}{it['fila']}"]
-        bloques = self.sheet.batch_get(rangos)
+        bloques = _reintentar(self.sheet.batch_get, rangos)
 
         def celda(b):
             return b[0][0] if b and b[0] else ''
@@ -172,15 +190,15 @@ class SheetsHandler:
                 })
 
             if updates:
-                self.sheet.batch_update(updates, value_input_option='USER_ENTERED')
+                _reintentar(self.sheet.batch_update, updates, value_input_option='USER_ENTERED')
                 print(f"   💾 {len(escritos)} filas marcadas como Cargado")
             if bitacora and self.bitacora_sheet:
-                self.bitacora_sheet.append_rows(bitacora, value_input_option='USER_ENTERED',
-                                                table_range='A1')
+                _reintentar(self.bitacora_sheet.append_rows, bitacora,
+                            value_input_option='USER_ENTERED', table_range='A1')
 
         if self._logs and self.logs_sheet:
-            self.logs_sheet.append_rows(self._logs, value_input_option='USER_ENTERED',
-                                        table_range='A1')
+            _reintentar(self.logs_sheet.append_rows, self._logs,
+                        value_input_option='USER_ENTERED', table_range='A1')
 
         self._cargados, self._logs = [], []
         return escritos

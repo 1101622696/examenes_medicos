@@ -129,7 +129,7 @@ def _procesar_plataforma(scraper, nombre, items, sheets, drive):
     return cargadas, motivos
 
 
-def ejecutar():
+def ejecutar(resumen=None):
     inicio = config.ahora()
     sheets, drive = SheetsHandler(), DriveHandler()
     pendientes = sheets.obtener_pendientes()
@@ -139,6 +139,8 @@ def ejecutar():
         por_ips[p['ips']].append(p)
 
     cargados, por_plataforma = [], {}
+    if resumen is not None:
+        resumen.update(revisados=len(pendientes), cargados=cargados, por_plataforma=por_plataforma)
 
     # ── Zona Médica y SAOCCS (ATIS): una pasada cada una ────────────
     for ips, fabrica in ((config.IPS_ZONAMEDICA, ZonaMedicaScraper),
@@ -169,12 +171,13 @@ def ejecutar():
             cargadas_h |= ok
             for fila, m in motivos.items():
                 motivos_h[fila].append(m)
-            escritos_h += sheets.flush()       # guarda cargados de esta pasada
+            nuevos = sheets.flush()
+            escritos_h += nuevos
+            cargados += nuevos       # guarda cargados de esta pasada
         for it in items:
             if it['fila'] not in cargadas_h:
                 sheets.registrar_log(it, ' | '.join(motivos_h[it['fila']]) or 'HISESA: sin resultado')
         sheets.flush()
-        cargados += escritos_h
         por_plataforma[config.IPS_HISESA] = {'revisados': len(items), 'cargados': len(escritos_h)}
 
     return {

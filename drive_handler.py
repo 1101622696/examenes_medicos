@@ -30,6 +30,6 @@ class DriveHandler:
             media_body=media,
             fields='id, webViewLink',
             supportsAllDrives=True,
-        ).execute()
+        ).execute(num_retries=3)
 
         return archivo.get('webViewLink')
