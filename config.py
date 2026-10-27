@@ -52,15 +52,15 @@ def ahora():
     return datetime.now(ZoneInfo(TZ_NEGOCIO))
 
 # ── Columnas de la hoja Examenes (índices base 0) ──────
-COL_ID_EXAMEN=0
-COL_CEDULA = 8
-COL_FECHA_EXAMEN = 23
-COL_LINK_CERTIFICADO = 27
-COL_IPS = 20
-COL_ESTADO = 5
-COL_FECHA_CARGUE = 6
-COL_TIPO_EXAMEN = 3
-COL_COMPONENTE = 4
+COL_ID_EXAMEN = int(os.getenv('COL_ID_EXAMEN'))
+COL_CEDULA = int(os.getenv('COL_CEDULA'))
+COL_FECHA_EXAMEN = int(os.getenv('COL_FECHA_EXAMEN'))
+COL_LINK_CERTIFICADO = int(os.getenv('COL_LINK_CERTIFICADO'))
+COL_IPS = int(os.getenv('COL_IPS'))
+COL_ESTADO = int(os.getenv('COL_ESTADO'))
+COL_FECHA_CARGUE = int(os.getenv('COL_FECHA_CARGUE'))
+COL_TIPO_EXAMEN = int(os.getenv('COL_TIPO_EXAMEN'))
+COL_COMPONENTE = int(os.getenv('COL_COMPONENTE'))
 
 IPS_ATIS = 'SAOCSS'
 
