@@ -18,6 +18,11 @@ HISESA_USERNAME2 = os.getenv('HISESA_USERNAME2')
 HISESA_PASSWORD1 = os.getenv('HISESA_PASSWORD1')
 HISESA_PASSWORD2 = os.getenv('HISESA_PASSWORD2')
 
+# ── Plataforma SSO ──────────────────────────────────────────
+SSO_URL = os.getenv('SSO_URL')
+SSO_USERNAME = os.getenv('SSO_USERNAME')
+SSO_PASSWORD = os.getenv('SSO_PASSWORD')
+
 # ── Plataforma Zona Médica IPS ───────────────────────────────────────
 ZONAMEDICA_URL=os.getenv('ZONAMEDICA_URL')
 ZONAMEDICA_USERNAME = os.getenv('ZONAMEDICA_USERNAME')
@@ -79,9 +84,11 @@ ESTADO_DESTINO = 'Cargado'
 DIAS_VENTANA_CARGUE = int(os.getenv('DIAS_VENTANA_CARGUE', 20))
 IPS_ZONAMEDICA = 'ZONA MEDICA'
 IPS_HISESA = 'HISESA'
-IPS_SOPORTADAS = [IPS_ZONAMEDICA, IPS_ATIS, IPS_HISESA]
+IPS_SSO = 'SSO - CRC SERVICIOS DE SALUD OCUPACIONAL S.A.S'
+IPS_SOPORTADAS = [IPS_ZONAMEDICA, IPS_ATIS, IPS_HISESA, IPS_SSO]
 
 HISESA_ESPERA_MS = int(os.getenv('HISESA_ESPERA_MS', 3500))
+SSO_ESPERA_MS = int(os.getenv('SSO_ESPERA_MS', 3500))
 
 # ── Ejecución (REEMPLAZA) ───────────────────────────────────────────
 HEADLESS = os.getenv('HEADLESS', 'true').lower() == 'true'
@@ -109,6 +116,9 @@ def validar_config():
     if not HISESA_USERNAME2 or not HISESA_PASSWORD2:
         errores.append("❌ Credenciales HISESA (cuenta 2) incompletas")
     
+    if not SSO_USERNAME or not SSO_PASSWORD:
+        errores.append("❌ SSO_USERNAME o SSO_PASSWORD no están configurados en .env")
+
     if not ATIS_URL or not ZONAMEDICA_URL:
         errores.append("❌ ATIS_URL o ZONAMEDICA_URL no configuradas")
     

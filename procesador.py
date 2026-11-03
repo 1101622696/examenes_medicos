@@ -7,6 +7,7 @@ from date_matcher import elegir_mejor_resultado
 from atis_scraper import AtisScraper
 from zonamedica_scraper import ZonaMedicaScraper
 from hisesa_scraper import HisesaScraper
+from sso_scraper import SsoScraper
 
 ETIQUETAS = {'ALTURAS': 'Alturas', 'POSINCAPACIDAD': 'Posincapacidad',
              'EGRESO': 'Retiro', 'NORMAL': 'concepto médico'}
@@ -156,7 +157,8 @@ def ejecutar(resumen=None):
 
     # ── Zona Médica y SAOCCS (ATIS): una pasada cada una ────────────
     for ips, fabrica in ((config.IPS_ZONAMEDICA, ZonaMedicaScraper),
-                         (config.IPS_ATIS, AtisScraper)):
+                         (config.IPS_ATIS, AtisScraper),
+                         (config.IPS_SSO, SsoScraper)):
         items = por_ips.get(ips, [])
         if not items:
             continue
