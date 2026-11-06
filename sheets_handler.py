@@ -50,6 +50,26 @@ def _letra(idx0):
 
 ESTADOS_ORIGEN_N = {normalizar(e) for e in config.ESTADOS_ORIGEN}
 IPS_N = {normalizar(i) for i in config.IPS_SOPORTADAS}
+IPS_PSICO_N = {normalizar(i) for i in config.IPS_PSICO}
+PSICO_N = set(config.ESPECIALIDADES_PSICO)
+
+
+def especialidad_psico(componente, especialidad):
+    """
+    Especialidad psico de la fila (PSICOFISICO / PSICOSENSOMETRICO) o '' si no es una
+    fila psico de una sola especialidad.
+      - Componente psico: viene en COMPONENTE.
+      - Principal "solo psico": COMPONENTE = Principal y la especialidad en ESPECIALIDAD.
+    Una fila con las dos psico juntas devuelve '' (no se automatiza).
+    """
+    comp = normalizar(componente)
+    if comp in PSICO_N:
+        return comp
+    if comp in ('PRINCIPAL', ''):
+        esp = normalizar(especialidad)
+        if esp in PSICO_N:
+            return esp
+    return ''
 
 
 class SheetsHandler:
@@ -82,6 +102,8 @@ class SheetsHandler:
                   'tipo': config.COL_TIPO_EXAMEN, 'componente': config.COL_COMPONENTE,}
         if config.COL_ID_EXAMEN is not None:
             campos['id'] = config.COL_ID_EXAMEN
+        if config.COL_ESPECIALIDAD is not None:
+            campos['especialidad'] = config.COL_ESPECIALIDAD
 
         rangos = [f'{_letra(c)}{ini}:{_letra(c)}' for c in campos.values()]
         # bloques = self.sheet.batch_get(rangos)   # ← 1 llamada a la API
@@ -93,7 +115,7 @@ class SheetsHandler:
         def get(k, i):
             return str(cols[k][i]).strip() if k in cols and i < len(cols[k]) else ''
 
-        pendientes = []
+        pendientes, combinadas = [], 0
         for i in range(n):
             estado = get('estado', i)
             if normalizar(estado) not in ESTADOS_ORIGEN_N:      # filtro 1: estado
@@ -105,7 +127,13 @@ class SheetsHandler:
             if not cedula:
                 continue
             componente = get('componente', i)
-            if normalizar(componente) not in ('PRINCIPAL', 'ALTURAS', ''):
+            psico = ''
+            if ips in IPS_PSICO_N:                               # ICSA / SIMETRIC: solo filas psico
+                psico = especialidad_psico(componente, get('especialidad', i))
+                if not psico:
+                    combinadas += 1
+                    continue
+            elif normalizar(componente) not in ('PRINCIPAL', 'ALTURAS', ''):
                 continue
             texto_fecha = get('fecha', i)
             pendientes.append({
@@ -118,9 +146,13 @@ class SheetsHandler:
                 'fecha_examen': parsear_fecha_sheet(texto_fecha),
                 'id_examen': get('id', i),
                 'componente': componente,
+                'especialidad': get('especialidad', i),
+                'psico': psico,          # PSICOFISICO / PSICOSENSOMETRICO / ''
             })
 
         print(f"📋 {len(pendientes)} exámenes pendientes (Solicitado/Confirmado en IPS automatizadas)")
+        if combinadas:
+            print(f"   ⚠️ {combinadas} fila(s) de ICSA/SIMETRIC sin una sola especialidad psico: se omiten")
         return pendientes
 
     # ── BUFFERS ─────────────────────────────────────────────────────
